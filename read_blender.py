@@ -11,24 +11,26 @@ def extract_infos(a_tag):
     build_type = a_tag.find('span', class_='build').get_text()
     build_size = a_tag.find('span', class_='size').get_text()
     infos = {
-                'build_name': build_name,
-                'build_date': build_date,
-                'build_type': build_type,
-                'build_size': build_size,
-                'download_url': download_url
-            }
+        'build_name': build_name,
+        'build_date': build_date,
+        'build_type': build_type,
+        'build_size': build_size,
+        'download_url': download_url
+    }
     return infos
 
 # Reading blender builder download web page
 with urllib.request.urlopen(download_url) as response:
-   html = response.read()
+    html = response.read()
 
 soup = BeautifulSoup(html, 'html.parser')
 
-download_block = soup.find('section', class_="builds-list platform-win")
+download_blocks = soup.find_all('section', class_="builds-list")
 
-selected = download_block.select('li a')
+selected = []
+for section in download_blocks:
+    selected.extend(section.select('li a'))
 
 for tag in selected:
- print(extract_infos(tag))
+    print(extract_infos(tag))
 
