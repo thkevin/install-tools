@@ -5,6 +5,8 @@
 import urllib.request
 import re
 import os
+import sys
+import tarfile
 from bs4 import BeautifulSoup
 
 builder_url = 'https://builder.blender.org/'
@@ -43,6 +45,7 @@ def download_build(selected_build):
         # check if file exist
         fh = open(file_path, 'r')
         print('Build from ' + date + ' already downloaded')
+        extract_bz2(file_path, download_folder + "/blender")
     except FileNotFoundError:
         # Downloading
         urllib.request.urlretrieve(download_url, file_path)
@@ -91,17 +94,32 @@ def greater_size(f_size1, f_size2):
         return True
 
 
+# Untar tar.bz2 archive
+def extract_bz2(filename, path="."):
+    with tarfile.open(filename, "r:bz2") as tar:
+        tar.extractall(path)
+
+
+def check_path(to_check):
+    path_to_check = str(to_check)
+    assert os.path.exists(path_to_check), "The path: \'" + path_to_check + "\' does not exist. \nTask aborted"
+
+
 # Reading blender builder download web page
-with urllib.request.urlopen(builder_url + 'download') as response:
-    html = response.read()
-soup = BeautifulSoup(html, 'html.parser')
+# with urllib.request.urlopen(builder_url + 'download') as response:
+#     html = response.read()
+# soup = BeautifulSoup(html, 'html.parser')
 
 # Retrieving only linux tags
-download_blocks = soup.find_all('section', class_="builds-list platform-linux")
-selected = []
-for section in download_blocks:
-    selected.extend(section.select('li a'))
+# download_blocks = soup.find_all('section', class_="builds-list platform-linux")
 
-print(extract_infos(selected[1]))
+# selected = []
+# for section in download_blocks:
+#     selected.extend(section.select('li a'))
 
-download_build(extract_infos(selected[1]))
+download_path = input("Enter the download path: ")
+
+print(download_path)
+check_path(download_path)
+
+# download_build(extract_infos(selected[1]))
