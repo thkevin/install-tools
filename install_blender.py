@@ -1,16 +1,20 @@
 # Debian Linux blender download and install from blender builder
 
 # pip install beautifulsoup
+# sudo apt-get install python3-bs4
 
 import urllib.request
 import re
-import os
+import os, errno
 import sys
 import tarfile
 from bs4 import BeautifulSoup
 
-builder_url = 'https://builder.blender.org/'
-download_folder = './downloads/'
+HOME = os.path.expanduser("~")
+
+BUILDER_PAGE = 'https://builder.blender.org/'
+BUILD_DIR = HOME + '/blender_builder/'
+DOWNLOAD_DIR =  HOME +  '/Downloads/'
 
 
 # Parse dedicated html tag for infos
@@ -37,15 +41,18 @@ def download_build(selected_build):
     size = selected_build['build_size']
     extension = selected_build['download_extension']
 
-    download_url = builder_url + extension
+    download_url = BUILDER_PAGE + extension
     filename = extension.split('/').pop()
-    file_path = download_folder + filename
-
+    file_path = BUILD_DIR + filename
+ 
+    if not os.path.exists(BUILD_DIR):
+        os.makedirs(BUILD_DIR)
+    
     try:
-        # check if file exist
+        # check if file exist and extract if so
         fh = open(file_path, 'r')
         print('Build from ' + date + ' already downloaded')
-        extract_bz2(file_path, download_folder + "/blender")
+        extract_bz2(file_path, BUILD_DIR + "/blender")
     except FileNotFoundError:
         # Downloading
         urllib.request.urlretrieve(download_url, file_path)
@@ -60,7 +67,8 @@ def download_build(selected_build):
             # Removing corrupted file
             os.remove(file_path)
             print("Corrupted file removed")
-
+        # Extract downloaded file
+        extract_bz2(file_path, BUILD_DIR + "/blender")
 
 # Found in stackoverflow, human readable size
 def humanbytes(B):
@@ -100,26 +108,34 @@ def extract_bz2(filename, path="."):
         tar.extractall(path)
 
 
+# Check if path exist
 def check_path(to_check):
     path_to_check = str(to_check)
-    assert os.path.exists(path_to_check), "The path: \'" + path_to_check + "\' does not exist. \nTask aborted"
+    dir_path = os.path.dirname(os.path.realpath(path_to_check))
+    print(dir_path)
+    assert_msg = "The path: \'" + path_to_check + "\' does not exist. \nTask aborted"
+    assert os.path.exists(path_to_check), assert_msg
 
 
-# Reading blender builder download web page
-# with urllib.request.urlopen(builder_url + 'download') as response:
-#     html = response.read()
-# soup = BeautifulSoup(html, 'html.parser')
+# Creates the builder folder
+def create_folder(folder_path):
+    try:
+        os.makedirs(folder_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
-# Retrieving only linux tags
-# download_blocks = soup.find_all('section', class_="builds-list platform-linux")
 
-# selected = []
-# for section in download_blocks:
-#     selected.extend(section.select('li a'))
+# Reading blender builder web page
+with urllib.request.urlopen(BUILDER_PAGE + 'download') as response:
+    html = response.read()
+soup = BeautifulSoup(html, 'html.parser')
 
-download_path = input("Enter the download path: ")
+# Retrieving linux tags
+download_blocks = soup.find_all('section', class_="builds-list platform-linux")
 
-print(download_path)
-check_path(download_path)
+selected = []
+for section in download_blocks:
+    selected.extend(section.select('li a'))
 
-# download_build(extract_infos(selected[1]))
+download_build(extract_infos(selected[0]))
