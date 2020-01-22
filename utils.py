@@ -11,9 +11,8 @@ from datetime import datetime
 
 HOME = os.path.expanduser("~")
 
-BUILDER_PAGE = 'https://builder.blender.org/'
-BUILD_DIR = HOME + '/blender_builder/'
 DOWNLOAD_DIR = HOME + '/Downloads/blender_builds/'
+SHORTCUTS_DIR = HOME + '/.local/share/applications/'
 TS_NOW = datetime.now().timestamp()
 
 
@@ -89,3 +88,39 @@ def clean_files(match_regex, f_path, creation_hrs=None):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
+
+# Untar build files
+def extract_build(filename, dest_path):
+    check_path(filename)
+    if filename.split('.').pop() in ['xz', 'bz2']:
+        extract_mode = "r:" + filename.split('.').pop()
+    else:
+        return
+
+    with tarfile.open(filename, extract_mode) as tar:
+        blender_folder = os.path.commonprefix(tar.getnames())
+        if all(m_path.startswith('blender') for m_path in tar.getnames()):
+            tar.extractall(path=dest_path)
+        else:
+            return
+
+    blender_path = dest_path + '/blender'
+
+    # Archive old blender version
+    arch_path = dest_path + '/archives/'
+    create_folder(arch_path)
+    # clean_files("arch_*", arch_path, 7 * 24)  # Remove archives older than 7d
+    if os.path.exists(blender_path):
+        shutil.move(blender_path, arch_path + '/arch_' + str(int(TS_NOW)))
+
+    try:
+        os.rename(dest_path + '/' + blender_folder, blender_path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+
+# Create app shortcut
+def desktop_shortcut():
+    return 0
