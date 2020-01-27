@@ -6,10 +6,10 @@ from utils import *
 
 BUILDER_PAGE = 'https://builder.blender.org/'
 BUILD_DIR = HOME + '/blender_builder/'
-
+DOWNLOAD_DIR = DOWNLOAD_DIR + 'blender_build/'
 
 # Parse dedicated html tag for infos
-def extract_infos(a_tag):
+def extract_build_infos(a_tag):
     download_extension = a_tag['href']
     name = a_tag.find('span', class_='name').contents[0]
     date = a_tag.find('span', class_='name').select('small')[0].get_text()
@@ -27,7 +27,7 @@ def extract_infos(a_tag):
 
 # Download linux zip file
 # Return a tuple (Exist, Downloaded, Path)
-def download_build(selected_build, download_path=DOWNLOAD_DIR):
+def download_blender_build(selected_build, download_path=DOWNLOAD_DIR):
     name = selected_build['build_name']
     date = selected_build['build_date']
     size = selected_build['build_size']
@@ -40,28 +40,24 @@ def download_build(selected_build, download_path=DOWNLOAD_DIR):
     create_folder(download_path)
     clean_files("blender.*tar.*", download_path, 7 * 24)
 
-    try:
-        # check if file exist and extract if so
-        fh = open(file_path, 'r')
-        print('File already exists')
-        return True, False, file_path
-    except FileNotFoundError:
-        print("Downloading")
-        # Downloading
-        urllib.request.urlretrieve(download_url, file_path)
+    # Download build
+    build_download = download_file(download_url, file_path)
 
-        # check downloaded file size
+    # check downloaded file by comparing the expected and actual sizes
+    if build_download[1]:
         file_infos = os.stat(file_path)
         if greater_size(str(size), str(humanbytes(file_infos.st_size))):
             print("Expected size downloaded")
-            print(name + ' downloaded in ' + file_path)
-            return True, True, file_path
+            print(name + ' downloaded as ' + file_path)
+            return build_download
         else:
             print("Expected size not reached")
             # Removing corrupted file
             os.remove(file_path)
             print("Corrupted file removed")
             return False, False, None
+    else:
+        return(build_download)
 
 
 # Reading blender builder web page
@@ -76,8 +72,8 @@ selected = []
 for section in download_blocks:
     selected.extend(section.select('li a'))
 
-result_download = download_build(extract_infos(selected[0]))
+result_download = download_blender_build(extract_build_infos(selected[0]))
 
 if result_download[1]:  # Extract file only when it is downloaded
     print("Extracting")
-    extract_build(result_download[2], BUILD_DIR)
+    extract_blender_archive(result_download[2], BUILD_DIR)

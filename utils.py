@@ -8,10 +8,11 @@ import tarfile
 import shutil
 from bs4 import BeautifulSoup
 from datetime import datetime
+from distutils.version import LooseVersion, StrictVersion
 
 HOME = os.path.expanduser("~")
 
-DOWNLOAD_DIR = HOME + '/Downloads/blender_builds/'
+DOWNLOAD_DIR = HOME + '/Downloads/'
 SHORTCUTS_DIR = HOME + '/.local/share/applications/'
 TS_NOW = datetime.now().timestamp()
 
@@ -91,7 +92,7 @@ def clean_files(match_regex, f_path, creation_hrs=None):
 
 
 # Untar build files
-def extract_build(filename, dest_path):
+def extract_blender_archive(filename, dest_path):
     check_path(filename)
     if filename.split('.').pop() in ['xz', 'bz2']:
         extract_mode = "r:" + filename.split('.').pop()
@@ -110,7 +111,7 @@ def extract_build(filename, dest_path):
     # Archive old blender version
     arch_path = dest_path + '/archives/'
     create_folder(arch_path)
-    # clean_files("arch_*", arch_path, 7 * 24)  # Remove archives older than 7d
+    clean_files("arch_*", arch_path, 7 * 24)  # Remove archives older than 7d
     if os.path.exists(blender_path):
         shutil.move(blender_path, arch_path + '/arch_' + str(int(TS_NOW)))
 
@@ -120,6 +121,18 @@ def extract_build(filename, dest_path):
         if e.errno != errno.EEXIST:
             raise
 
+
+def download_file(file_url, dest_path):
+    try:
+        # check if file exist and extract if so
+        fh = open(dest_path, 'r')
+        print('File already exists')
+        return True, False, dest_path
+    except FileNotFoundError:
+        print("Downloading")
+        # Downloading
+        urllib.request.urlretrieve(file_url, dest_path)
+        return True, True, dest_path
 
 # Create app shortcut
 def desktop_shortcut():
