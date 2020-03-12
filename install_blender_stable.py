@@ -12,16 +12,20 @@ INSTALL_DIR = '/tmp/'  # using /tmp instead of /opt.. For now
 DOWNLOAD_DIR = DOWNLOAD_DIR + 'blender_stable/'
 
 # bs4 a tags object that return all 
-def release_infos(bs4_a_tag):
+def release_infos(bs4_a_tag, regex = 'Blender(.*)/', base_link = DOWNLOAD_PAGE):
+    version_regex = re.compile(regex, re.IGNORECASE)
     href = bs4_a_tag.get("href")
-    version_search = re.search(r'Blender(.*)/', href, re.IGNORECASE)
-    version = version_search.group(1)
-    if not re.match(r'^[0-9]',version):
+    version_search = re.search(version_regex, href)
+    if version_search:
+        version = version_search.group(1)
+        if not re.match(r'^[0-9]',version):
+            version = None
+    else:
         version = None
     release = {
         'version' : version,
         'folder' : href,
-        'link' : DOWNLOAD_PAGE + href
+        'link' : base_link + href
     }
     return release
 
@@ -42,14 +46,22 @@ def download_blender_stable(download_url=DOWNLOAD_PAGE, download_path=DOWNLOAD_D
         if LooseVersion(m['version']) > LooseVersion(last_release['version']):
             last_release = m
 
-    print("Downloading release: " + last_release['version'])
+    print("Last release: " + last_release['version'])
 
     # Listing release folder index
     with urllib.request.urlopen(last_release['link']) as response:
         html = response.read()
     soup = BeautifulSoup(html, 'html.parser')
 
-    print(soup.find_all("a"))
+    r_tags = [release_infos(a, 'blender-(.*)-linux', last_release['link']) for a in soup.find_all("a")]
+    linux_releases = [l for l in r_tags if l['version']]
+
+    latest_linux = linux_releases[0]
+    for l in linux_releases:
+        if LooseVersion(l['version']) > LooseVersion(latest_linux['version']):
+            latest_linux = l
+
+    print(latest_linux)
 
     # splitted_url = [p for p in download_url.split('/') if p]
     # filename = splitted_url.pop()
