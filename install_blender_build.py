@@ -3,10 +3,12 @@
 # pip install beautifulsoup
 # sudo apt-get install python3-bs4
 from utils import *
+from bs4 import BeautifulSoup
 
 BUILDER_PAGE = 'https://builder.blender.org/'
-BUILD_DIR = HOME + '/blender_builder/'
-DOWNLOAD_DIR = DOWNLOAD_DIR + 'blender_build/'
+BUILD_DIR = ''.join([HOME, '/blender_builder/'])
+DOWNLOAD_DIR = ''.join([DOWNLOAD_DIR, 'blender_build/'])
+
 
 # Parse dedicated html tag for infos
 def extract_build_infos(a_tag):
@@ -25,7 +27,7 @@ def extract_build_infos(a_tag):
     return infos
 
 
-# Download linux zip file
+# Download blender build linux file
 # Return a tuple (Exist, Downloaded, Path)
 def download_blender_build(selected_build, download_path=DOWNLOAD_DIR):
     name = selected_build['build_name']
@@ -33,11 +35,12 @@ def download_blender_build(selected_build, download_path=DOWNLOAD_DIR):
     size = selected_build['build_size']
     extension = selected_build['download_extension']
 
-    download_url = BUILDER_PAGE + extension
+    download_url = ''.join([BUILDER_PAGE, extension])
     filename = extension.split('/').pop()
-    file_path = download_path + filename
+    file_path = ''.join([download_path, filename])
 
     create_folder(download_path)
+    # Clean downloads older than 7 days in download folder
     clean_files("blender.*tar.*", download_path, 7 * 24)
 
     # Download build
@@ -48,7 +51,7 @@ def download_blender_build(selected_build, download_path=DOWNLOAD_DIR):
         file_infos = os.stat(file_path)
         if greater_size(str(size), str(humanbytes(file_infos.st_size))):
             print("Expected size downloaded")
-            print(name + ' downloaded as ' + file_path)
+            print(''.join([name,' downloaded as ',file_path]))
             return build_download
         else:
             print("Expected size not reached")

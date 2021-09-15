@@ -1,19 +1,17 @@
-
+from posixpath import basename
 import urllib.request
 import re
 import os
 import errno
-import sys
 import tarfile
 import shutil
-from bs4 import BeautifulSoup
 from datetime import datetime
-from distutils.version import LooseVersion, StrictVersion
 
 HOME = os.path.expanduser("~")
 
-DOWNLOAD_DIR = HOME + '/Downloads/'
-SHORTCUTS_DIR = HOME + '/.local/share/applications/'
+print(' '.join(["HOME:", HOME]))
+DOWNLOAD_DIR = ''.join([HOME, '/Downloads/'])
+SHORTCUTS_DIR = ''.join([HOME, '/.local/share/applications/'])
 TS_NOW = datetime.now().timestamp()
 
 
@@ -75,7 +73,7 @@ def clean_files(match_regex, f_path, creation_hrs=None):
 
     try:
         ls_dir = os.listdir(f_path)
-        to_rm = [os.path.join(f_path, f) for f in ls_dir if rg.match(f)]
+        to_rm = [os.path.join([f_path, f]) for f in ls_dir if rg.match(f)]
 
         if creation_hrs:
             limit_ts = TS_NOW - (creation_hrs * 60 * 60)  # hours to sec
@@ -94,8 +92,9 @@ def clean_files(match_regex, f_path, creation_hrs=None):
 # Untar build files
 def extract_blender_archive(filename, dest_path):
     check_path(filename)
-    if filename.split('.').pop() in ['xz', 'bz2']:
-        extract_mode = "r:" + filename.split('.').pop()
+    arch_type = filename.split('.').pop()
+    if arch_type in ['xz', 'bz2']:
+        extract_mode = "r:" + arch_type
     else:
         return
 
@@ -106,22 +105,24 @@ def extract_blender_archive(filename, dest_path):
         else:
             return
 
-    blender_path = dest_path + '/blender'
+    blender_path = ''.join([dest_path, '/blender'])
 
     # Archive old blender version
-    arch_path = dest_path + '/archives/'
+    arch_path = ''.join([dest_path, '/archives/'])
     create_folder(arch_path)
     clean_files("arch_*", arch_path, 7 * 24)  # Remove archives older than 7d
     if os.path.exists(blender_path):
-        shutil.move(blender_path, arch_path + '/arch_' + str(int(TS_NOW)))
+        str_timestamp = str(int(TS_NOW))
+        shutil.move(blender_path, ''.join([arch_path, '/arch_', str_timestamp]))
 
     try:
-        os.rename(dest_path + '/' + blender_folder, blender_path)
+        os.rename(''.join([dest_path, '/', blender_folder]), blender_path)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
 
+# Download file from url to destination path
 def download_file(file_url, dest_path):
     try:
         # check if file exist and extract if so
@@ -133,6 +134,7 @@ def download_file(file_url, dest_path):
         # Downloading
         urllib.request.urlretrieve(file_url, dest_path)
         return True, True, dest_path
+
 
 # Create app shortcut
 def desktop_shortcut():
